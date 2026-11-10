@@ -62,5 +62,9 @@ Statistics run_fifo(const int pages[],
 Statistics run_lru(const int pages[],
                    int page_count,
                    int frame_count);
+/* Clock (Second Chance) */
+Statistics run_clock(const int pages[],
+                     int page_count,
+                     int frame_count);
 
 #endif
