@@ -22,4 +22,4 @@ int enter_trace_manually(Trace *trace);
 void free_trace(Trace *trace);
 void print_trace(const Trace *trace);
 
-#endif
+#endif  
