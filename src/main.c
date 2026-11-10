@@ -1,6 +1,7 @@
 #include "cli.h"
 #include "trace.h"
 #include "replacement.h"
+#include "metrics.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +15,8 @@ int main(void) {
     char filename[256];
     int *pages;
     Statistics statistics;
+    Metrics metrics;
+    const char *algorithm_name;
 
     printf("Virtual Memory and Page-Replacement Simulator\n");
 
@@ -62,26 +65,23 @@ int main(void) {
     switch (algorithm) {
         case ALGORITHM_FIFO:
             statistics = run_fifo(
-                pages,
-                trace.count,
-                frame_count
+                pages, trace.count, frame_count
             );
+            algorithm_name = "FIFO";
             break;
 
         case ALGORITHM_LRU:
             statistics = run_lru(
-                pages,
-                trace.count,
-                frame_count
+                pages, trace.count, frame_count
             );
+            algorithm_name = "LRU";
             break;
 
         case ALGORITHM_CLOCK:
             statistics = run_clock(
-                pages,
-                trace.count,
-                frame_count
+                pages, trace.count, frame_count
             );
+            algorithm_name = "Clock";
             break;
 
         default:
@@ -91,11 +91,13 @@ int main(void) {
             return 1;
     }
 
-    printf("\nSimulation Results\n");
-    printf("------------------\n");
-    printf("Page hits: %d\n", statistics.hits);
-    printf("Page faults: %d\n", statistics.faults);
-    printf("Replacements: %d\n", statistics.replacements);
+    metrics = metrics_from_statistics(
+        statistics,
+        trace.count,
+        0
+    );
+
+    metrics_print(algorithm_name, &metrics);
 
     free(pages);
     free_trace(&trace);
