@@ -3,6 +3,24 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+static void clear_input(void) {
+    int character;
+
+    while ((character = getchar()) != '\n' &&
+           character != EOF) {
+    }
+}
+
+static Operation convert_operation(char operation) {
+    operation = (char)toupper((unsigned char)operation);
+
+    if (operation == 'W') {
+        return OP_WRITE;
+    }
+
+    return OP_READ;
+}
+
 int load_trace_from_file(const char *filename, Trace *trace) {
     FILE *file;
     int page_number;
@@ -15,11 +33,13 @@ int load_trace_from_file(const char *filename, Trace *trace) {
     }
 
     file = fopen(filename, "r");
+
     if (file == NULL) {
         return 0;
     }
 
-    trace->references = malloc(capacity * sizeof(PageReference));
+    trace->references =
+        malloc(capacity * sizeof(PageReference));
     trace->count = 0;
 
     if (trace->references == NULL) {
@@ -28,12 +48,16 @@ int load_trace_from_file(const char *filename, Trace *trace) {
     }
 
     while (fscanf(file, "%d %d %c",
-                  &page_number, &process_id, &operation) == 3) {
+                  &page_number,
+                  &process_id,
+                  &operation) == 3) {
 
         if (trace->count == capacity) {
+            PageReference *new_references;
+
             capacity *= 2;
 
-            PageReference *new_references =
+            new_references =
                 realloc(trace->references,
                         capacity * sizeof(PageReference));
 
@@ -48,21 +72,69 @@ int load_trace_from_file(const char *filename, Trace *trace) {
             trace->references = new_references;
         }
 
-        trace->references[trace->count].page_number = page_number;
-        trace->references[trace->count].process_id = process_id;
+        trace->references[trace->count].page_number =
+            page_number;
 
-        operation = (char)toupper((unsigned char)operation);
+        trace->references[trace->count].process_id =
+            process_id;
 
-        if (operation == 'W') {
-            trace->references[trace->count].operation = OP_WRITE;
-        } else {
-            trace->references[trace->count].operation = OP_READ;
-        }
+        trace->references[trace->count].operation =
+            convert_operation(operation);
 
         trace->count++;
     }
 
     fclose(file);
+    return 1;
+}
+
+int enter_trace_manually(Trace *trace) {
+    int count;
+    int i;
+    char operation;
+
+    if (trace == NULL) {
+        return 0;
+    }
+
+    printf("Enter number of page references: ");
+
+    if (scanf("%d", &count) != 1 || count <= 0) {
+        clear_input();
+        return 0;
+    }
+
+    clear_input();
+
+    trace->references =
+        malloc(count * sizeof(PageReference));
+    trace->count = count;
+
+    if (trace->references == NULL) {
+        trace->count = 0;
+        return 0;
+    }
+
+    for (i = 0; i < count; i++) {
+        printf("Reference %d (page process R/W): ",
+               i + 1);
+
+        while (scanf("%d %d %c",
+                     &trace->references[i].page_number,
+                     &trace->references[i].process_id,
+                     &operation) != 3) {
+            printf("Invalid input. Use: page process R/W\n");
+            clear_input();
+            printf("Reference %d (page process R/W): ",
+                   i + 1);
+        }
+
+        clear_input();
+
+        trace->references[i].operation =
+            convert_operation(operation);
+    }
+
     return 1;
 }
 

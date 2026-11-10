@@ -18,6 +18,7 @@ typedef struct {
 } Trace;
 
 int load_trace_from_file(const char *filename, Trace *trace);
+int enter_trace_manually(Trace *trace);
 void free_trace(Trace *trace);
 void print_trace(const Trace *trace);
 
