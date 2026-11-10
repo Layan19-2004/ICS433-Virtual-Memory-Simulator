@@ -1,7 +1,9 @@
 #include "cli.h"
 #include "trace.h"
+#include "replacement.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 int main(void) {
@@ -10,8 +12,10 @@ int main(void) {
     int input_mode;
     Trace trace = {NULL, 0};
     char filename[256];
+    int *pages;
+    Statistics statistics;
 
-    printf("Virtual Memory Simulator\n");
+    printf("Virtual Memory and Page-Replacement Simulator\n");
 
     algorithm = choose_algorithm();
     frame_count = read_frame_count();
@@ -37,25 +41,63 @@ int main(void) {
         }
     }
 
-    printf("\nSelected algorithm: ");
+    if (trace.count == 0) {
+        printf("The trace is empty.\n");
+        free_trace(&trace);
+        return 1;
+    }
+
+    pages = malloc(trace.count * sizeof(int));
+
+    if (pages == NULL) {
+        printf("Memory allocation failed.\n");
+        free_trace(&trace);
+        return 1;
+    }
+
+    for (int i = 0; i < trace.count; i++) {
+        pages[i] = trace.references[i].page_number;
+    }
 
     switch (algorithm) {
         case ALGORITHM_FIFO:
-            printf("FIFO\n");
+            statistics = run_fifo(
+                pages,
+                trace.count,
+                frame_count
+            );
             break;
 
         case ALGORITHM_LRU:
-            printf("LRU\n");
+            statistics = run_lru(
+                pages,
+                trace.count,
+                frame_count
+            );
             break;
 
         case ALGORITHM_CLOCK:
-            printf("Clock\n");
+            statistics = run_clock(
+                pages,
+                trace.count,
+                frame_count
+            );
             break;
+
+        default:
+            printf("Invalid algorithm.\n");
+            free(pages);
+            free_trace(&trace);
+            return 1;
     }
 
-    printf("Number of frames: %d\n\n", frame_count);
-    print_trace(&trace);
+    printf("\nSimulation Results\n");
+    printf("------------------\n");
+    printf("Page hits: %d\n", statistics.hits);
+    printf("Page faults: %d\n", statistics.faults);
+    printf("Replacements: %d\n", statistics.replacements);
 
+    free(pages);
     free_trace(&trace);
 
     return 0;
